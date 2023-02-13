@@ -1,21 +1,22 @@
 package com.example.getusers.ui
 
 import android.os.Bundle
+import android.os.Handler
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.example.getusers.R
+import com.example.getusers.data.User
 import com.example.getusers.databinding.ActivityMainBinding
-import com.example.getusers.model.User
-import com.example.getusers.model.remote.ApiInterface
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+
+    private val vm by viewModel<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,26 +26,41 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val retrofit: Retrofit = Retrofit.Builder()
-            .baseUrl("https://rest-api-retrofit-default-rtdb.firebaseio.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
 
+        //Write User
+        binding.btnAddUser.setOnClickListener {
+            val user = randomUser()
+            vm.addUser(user)
 
-        val apiInterface = retrofit.create(ApiInterface::class.java)
-        val call: Call<User> = apiInterface.getUser()
-
-        call.enqueue(object : Callback<User> {
-
-            override fun onResponse(call: Call<User>?, response: Response<User>?) {
-                binding.tvUser.text = "${response?.body()?.name} - ${response?.body()?.age}"
+            delay(5000) {
+                vm.deleteUser(user)
             }
 
-            override fun onFailure(call: Call<User>?, t: Throwable?) {
-                binding.tvUser.text = "${t?.message}"
-            }
+            vm.getAllUsers()
+        }
 
-        })
+        //Get Users
+        vm.getAllUsers()
+        var usersList: ArrayList<User>
+        vm.getAllUsersMutableLiveData.observe(this) { users ->
+            usersList = users
 
+            Log.d("dev21", usersList.toString())
+        }
+
+
+    }
+
+    private fun randomUser(): User {
+        val id = UUID.randomUUID().toString()
+        val name = "User_$id"
+        val age = (16..70).random()
+        return User(id, name, age)
+    }
+
+    private fun delay(time: Long, action: () -> Unit) {
+        Handler().postDelayed({
+            action()
+        }, time)
     }
 }

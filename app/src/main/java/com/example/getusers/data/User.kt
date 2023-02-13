@@ -1,6 +1,7 @@
-package com.example.getusers.model
+package com.example.getusers.data
 
 data class User(
+    val id:String,
     val name:String,
     val age:Int
 )
